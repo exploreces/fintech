@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class PdfExtractionService {
@@ -17,20 +18,24 @@ public class PdfExtractionService {
         log.info("Starting RAW PDF extraction for file: {}", pdfPath);
 
         try (PDDocument document = PDDocument.load(new File(pdfPath))) {
-
             log.debug("PDF loaded successfully");
 
             PDFTextStripper stripper = new PDFTextStripper();
+            // Disable sorting for faster extraction
+            stripper.setSortByPosition(false);
+
             String text = stripper.getText(document);
 
             log.info("PDF raw text extracted ({} characters)", text.length());
-            log.debug("Extracted PDF Text:\n{}", text);
-
             return text;
-
         } catch (Exception e) {
             log.error("Failed to extract text from PDF: {}", pdfPath, e);
             return ""; // Return empty string so AI can still get something
         }
+    }
+
+    // Async version for better performance
+    public CompletableFuture<String> extractRawTextFromPdfAsync(String pdfPath) {
+        return CompletableFuture.supplyAsync(() -> extractRawTextFromPdf(pdfPath));
     }
 }
